@@ -1,70 +1,237 @@
-# Getting Started with Create React App
+Here’s a clean, English README you can drop into your repo as `README.md`:
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+---
 
-## Available Scripts
+# ValeraChat
 
-In the project directory, you can run:
+A real-time group chat built with **React + Firebase** featuring rooms, per-room online presence, and a polished responsive UI.
 
-### `npm start`
+![stack](https://img.shields.io/badge/React-18-blue)
+![stack](https://img.shields.io/badge/Firebase-Auth%20%26%20Firestore-orange)
+![stack](https://img.shields.io/badge/Realtime-enabled-success)
+![stack](https://img.shields.io/badge/UI-Responsive-informational)
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+---
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## ✨ Features
 
-### `npm test`
+* **Google sign-in** (Firebase Auth)
+* **Rooms** with `updatedAt` sorting
+* **Realtime messages**: `rooms/{roomId}/messages`
+* **Who’s online** per room: `rooms/{roomId}/presence`
+  (`usePresence` hook updates `lastActive`)
+* **Security rules** enforce:
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+  * read by any authenticated user
+  * message creation by the author only (validated fields)
+  * room rename/delete by the room owner; owner can clean messages
+* Modern UI: gradient top bar, message bubbles, mobile **off-canvas** sidebar, soft shadows & animations
+* Production-ready Firestore **Rules** (below)
 
-### `npm run build`
+---
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## 🧱 Tech stack
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+* React (Context API)
+* Firebase Auth (Google), Cloud Firestore (realtime)
+* Plain CSS (responsive, custom scrollbars)
+* Create React App + ESLint
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+---
 
-### `npm run eject`
+## 📁 Project structure
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+```
+valera-chat/
+  public/                 static assets, favicons, manifest
+  src/
+    components/           RoomsBar, MessageList, Composer, OnlineList, Login…
+    contexts/             AuthContext
+    hooks/                usePresence
+    firebase.js           Firebase init (auth, db, providers)
+    index.css             full app styling
+    index.js              app entry
+  .env.local.example      environment variables template
+```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+---
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## 🚀 Quick start
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+1. **Clone**
 
-## Learn More
+```bash
+git clone https://github.com/Valeras17/valera-vhat.git
+cd valera-vhat
+```
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+2. **Environment variables**
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+```bash
+cp .env.local.example .env.local
+```
 
-### Code Splitting
+Fill with your Firebase config:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+```dotenv
+REACT_APP_FIREBASE_API_KEY=xxxx
+REACT_APP_FIREBASE_AUTH_DOMAIN=xxxx.firebaseapp.com
+REACT_APP_FIREBASE_PROJECT_ID=xxxx
+REACT_APP_FIREBASE_STORAGE_BUCKET=xxxx.appspot.com
+REACT_APP_FIREBASE_MESSAGING_SENDER_ID=xxxx
+REACT_APP_FIREBASE_APP_ID=1:xxxx:web:xxxx
+# optional:
+REACT_APP_FIREBASE_MEASUREMENT_ID=G-xxxx
+```
 
-### Analyzing the Bundle Size
+3. **Install & run**
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+```bash
+npm install
+npm start
+```
 
-### Making a Progressive Web App
+Open `http://localhost:3000`.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+---
 
-### Advanced Configuration
+## ⚙️ Firebase setup
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+1. Create a Firebase project → **Web app** → copy the config.
+2. Enable **Authentication → Sign-in method → Google**.
+3. Create **Cloud Firestore** (any mode; we’ll use Rules).
+4. Paste these **Firestore Rules**:
 
-### Deployment
+```rules
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{db}/documents {
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+    function authed() { return request.auth != null; }
+    function isRoomOwner(roomId) {
+      return authed() &&
+             get(/databases/$(db)/documents/rooms/$(roomId)).data.createdBy
+               == request.auth.uid;
+    }
 
-### `npm run build` fails to minify
+    match /rooms/{roomId} {
+      // list/read rooms — any authenticated user
+      allow read: if authed();
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+      // create a room
+      allow create: if authed()
+        && request.resource.data.keys().hasOnly(['name','createdBy','updatedAt'])
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0;
+
+      // update room:
+      // - any authed user may touch only 'updatedAt' (timestamp)
+      // - owner may change 'name' (+ optional 'updatedAt')
+      allow update: if authed() && (
+        (
+          request.resource.data.diff(resource.data).changedKeys().hasOnly(['updatedAt']) &&
+          request.resource.data.updatedAt is timestamp
+        ) || (
+          resource.data.createdBy == request.auth.uid &&
+          request.resource.data.diff(resource.data).changedKeys().hasOnly(['name','updatedAt']) &&
+          (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt is timestamp)
+        )
+      );
+
+      // delete room — owner only
+      allow delete: if authed() && resource.data.createdBy == request.auth.uid;
+
+      // messages in a room
+      match /messages/{msgId} {
+        allow read: if authed();
+        allow create: if authed()
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.createdAt is timestamp;
+
+        // author can edit own message
+        allow update: if authed() && resource.data.uid == request.auth.uid;
+
+        // author can delete own OR room owner can clean
+        allow delete: if authed() &&
+          (resource.data.uid == request.auth.uid || isRoomOwner(roomId));
+      }
+
+      // presence (who’s online)
+      match /presence/{uid} {
+        allow read: if authed();
+        allow create, update: if authed()
+          && request.auth.uid == uid
+          && request.resource.data.keys().hasOnly(['displayName','photoURL','lastActive'])
+          && request.resource.data.lastActive is timestamp;
+        allow delete: if authed() && (request.auth.uid == uid || isRoomOwner(roomId));
+      }
+    }
+  }
+}
+```
+
+---
+
+## 🔑 `src/firebase.js` example
+
+```js
+import firebase from "firebase/app";
+import "firebase/auth";
+import "firebase/firestore";
+
+const firebaseConfig = {
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.REACT_APP_FIREBASE_APP_ID,
+  measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID,
+};
+
+firebase.initializeApp(firebaseConfig);
+
+export const auth = firebase.auth();
+export const db = firebase.firestore();
+export const googleProvider = new firebase.auth.GoogleAuthProvider();
+
+export default firebase;
+```
+
+> 🔒 `.env.local` is **git-ignored**. Only `.env.local.example` is committed.
+
+---
+
+## 🧭 NPM scripts
+
+```bash
+npm start       # dev server
+npm run build   # production build
+```
+
+---
+
+## 📌 Usage
+
+* Click **Sign in with Google**
+* Create a room in the left sidebar (**+ New room**)
+* Type and press **Enter** to send (Shift+Enter for newline)
+* Online list shows active users in the current room
+* On mobile, the rooms sidebar opens as an off-canvas panel
+
+---
+
+## 🧩 Notes
+
+* Firebase config keys in the client are not secrets; **Rules** protect your data.
+* The UI is fully responsive; desktop and mobile layouts are optimized.
+* Owner can rename/delete rooms; everyone can bump `updatedAt` via activity.
+
+---
+
+## 📄 License
+
+MIT — feel free to use and modify. If you like it, a ⭐ on the repo is appreciated!
