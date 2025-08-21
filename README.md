@@ -10,6 +10,8 @@ A real-time group chat built with **React + Firebase** featuring rooms, per-room
 ![stack](https://img.shields.io/badge/Firebase-Auth%20%26%20Firestore-orange)
 ![stack](https://img.shields.io/badge/Realtime-enabled-success)
 ![stack](https://img.shields.io/badge/UI-Responsive-informational)
+<img width="1485" height="1403" alt="image" src="https://github.com/user-attachments/assets/59806cfe-895e-4782-bea9-eda7bb0591d0" />
+
 
 ---
 
