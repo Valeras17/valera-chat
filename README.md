@@ -70,8 +70,8 @@ valera-chat/
 1. **Clone**
 
 ```bash
-git clone https://github.com/Valeras17/valera-vhat.git
-cd valera-vhat
+git clone https://github.com/Valeras17/valera-chat.git
+cd valera-chat
 ```
 
 2. **Environment variables**
